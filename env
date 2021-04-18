@@ -1,0 +1,19 @@
+kernel_version = os.uname()[2]
+#Sweet Spot Identifier
+threads="16 8 4 2"  # Can ne list like "2 4 8 16"
+qdepth="16 8 4 2"   # Can be list like "2 4 8 16"
+effectiveqdepth="256 128 64 32 16 8 4" # Should be a list of all multiples of threads and qdepth
+readpct="70"        # Can be list like "100 70 50 30 0"
+blocksizes="8k"     # Can be list like "512 1k 4k 8k"
+runtime=1800
+#ramptime=900
+iolib=libaio
+align=4096
+
+precondition=1      # Set to 0 if you don't want preconditioning
+#Preconditioning Parameters
+pthreads=16
+pqdepth=16
+preadpct=70
+pblocksize=8k
+pruntime=21600
