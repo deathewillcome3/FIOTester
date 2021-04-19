@@ -17,7 +17,7 @@ def run_test_from_file(os, device, name, yaml_conf):
         if coordinate[2]*coordinate[3] == coordinate[0]:
             command = []
             if(os == "Windows"):
-                output = subprocess.run(["powershell.exe"] + command, capture_output=True)
+                output = subprocess.run(["powershell.exe", "fio", "--help"] + command, capture_output=True)
             else:
                 output = subprocess.run(["fio", "--help"], capture_output=True)
 
