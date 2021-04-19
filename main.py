@@ -4,8 +4,7 @@ import argparse
 import os
 import time
 import platform
-import linux
-import windows
+import tester
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -15,22 +14,14 @@ parser.add_argument("-f", "--filename", help="configuration file FIOTester shoul
 parser.add_argument("-d", "--device", help="device name FIOTester should write to")
 parser.add_argument("-n", "--test_name", help="names the test")
 args = parser.parse_args()
-if args.filename:
-    try:
-        with open(args.filename) as file, yaml.safe_load(file) as yaml:
-            if platform.system() == 'Linux':
-                print(yaml)
-                linux.run_test_from_file(yaml)
-            elif platform.system() == 'Windows':
-                print(yaml)
-                windows.run_test_from_file(yaml)
-    except FileNotFoundError:
-        print("Error: System cannot find file specified")
-    except yaml.YAMLError as exc:
-        print(exc)
-elif args.device and args.test_name
-    if platform.system() == 'Linux':
-        linux.run_test(args.device, args.test_name)
+if args.filename and args.device and args.test_name:
+    with open(args.filename) as file:
+        config = yaml.safe_load(file)
+        tester.run_test_from_file(platform.system(), args.device, args.test_name, config)
+elif args.device and args.test_name:
+    defaults = yaml.safe_load("defaults.yml")
+    tester.run_test_from_file(platform.system(), args.device, args.test_name, args.filename)
 
-    elif platform.system() == 'Windows':
-        windows.run_test(args.device, args.test_name)
+else:
+    print(" Please select a device name using the -d flag and a test name using the -n flag")
+
