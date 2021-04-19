@@ -1,0 +1,26 @@
+#Basic Defaults if parameters are unset
+
+threads:
+  - 16
+  - 8
+  - 4
+  - 2
+qdepths:
+  - 16
+  - 8
+  - 4
+  - 2
+readpcts:
+  - 100
+  - 70
+  - 50
+  - 30
+  - 0
+blocksizes:
+  - 512
+  - 1k
+  - 4k
+  - 8k
+
+runtime: 3600
+ioengine: libaio
