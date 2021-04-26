@@ -1,0 +1,15 @@
+threads:
+  - 2
+
+qdepths:
+  - 2
+
+readpcts:
+  - 30
+
+blocksizes:
+  - 16
+
+runtime: 30
+size: 16
+precondition: False

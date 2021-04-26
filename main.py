@@ -16,10 +16,17 @@ parser.add_argument("-n", "--test_name", help="names the test")
 args = parser.parse_args()
 with open("defaults.yml") as default:
     defaults = yaml.safe_load(default)
+with open("precondition.yml") as precondition:
+    precondition = yaml.safe_load(precondition)
 
 if args.filename and args.device and args.test_name:
     with open(args.filename) as file:
         config = yaml.safe_load(file)
+        precondition = config.get("precondition")
+        if precondition:
+            config.remove("precondition")
+            tester.run_test_from_file(platform.system(), args.device, args.test_name + " Precondition", precondition,
+                                      precondition)
         tester.run_test_from_file(platform.system(), args.device, args.test_name, config, defaults)
 elif args.device and args.test_name:
     tester.run_test_from_file(platform.system(), args.device, args.test_name, defaults, defaults)
