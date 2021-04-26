@@ -25,7 +25,7 @@ if args.filename and args.device and args.test_name:
         precondition = config.get("precondition")
         if precondition:
             config.remove("precondition")
-            tester.run_test_from_file(platform.system(), args.device, args.test_name + " Precondition", precondition,
+            tester.run_test_from_file(platform.system(), args.device, args.test_name + " precondition", precondition,
                                       precondition)
         tester.run_test_from_file(platform.system(), args.device, args.test_name, config, defaults)
 elif args.device and args.test_name:

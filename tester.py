@@ -29,7 +29,7 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
                 "-" + str(coordinate[1]) + ".json"
             arguments[len(arguments) - 2] += str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) +\
                 "-" + str(coordinate[1])
-            print("Running this command" + str(arguments))
+            print("Running this command" + str(arguments))output
             if os == "Windows":
                 output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json", "--thread"] + arguments,
                                           cstdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -37,4 +37,3 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
                 f = open("error.txt", "w+")
                 output = subprocess.Popen(["fio", "--output-format=json"] + arguments, stdout=subprocess.PIPE,
                                           stderr=f)
-                print(f.read())
