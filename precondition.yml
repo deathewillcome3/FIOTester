@@ -1,0 +1,18 @@
+threads:
+  - 16
+
+qdepths:
+  - 16
+
+readpcts:
+  - 70
+
+blocksizes:
+  - 8k
+
+runtime: 3600
+ioengine: libaio
+size: 50G
+direct: 1
+rw: randrw
+randrepeat: 0
