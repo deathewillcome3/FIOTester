@@ -25,5 +25,6 @@ elif args.device and args.test_name:
     tester.run_test_from_file(platform.system(), args.device, args.test_name, defaults, defaults)
 else:
     print("Hello")
+    print("This is a test")
     print(" Please select a device name using the -d flag and a test name using the -n flag")
 
