@@ -5,6 +5,7 @@ import os
 import time
 import platform
 import tester
+import fio_parser
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,20 +19,38 @@ with open("defaults.yml") as default:
     defaults = yaml.safe_load(default)
 with open("precondition.yml") as precondition:
     precondition = yaml.safe_load(precondition)
+cwd = os.getcwd()
 
 if args.filename and args.device and args.test_name:
     with open(args.filename) as file:
         config = yaml.safe_load(file)
         precondition = config.get("precondition")
         if precondition:
+            path = cwd + '\\precondition_run_' + args.test_name if platform.system() == "Windows" else cwd + "/precondition_run_" \
+                   + args.test_name
+            try:
+                os.listdir(path)
+                os.chdir(path)
+            except FileNotFoundError:
+                os.mkdir(path)
+                os.chdir(path)
             config.remove("precondition")
             tester.run_test_from_file(platform.system(), args.device, args.test_name + " precondition", precondition,
                                       precondition)
+            os.chdir(cwd)
+            fio_parser.parse(path)
+        path = cwd + '\\main_run_' + args.test_name if platform.system() == "Windows" else cwd + "/main_run_" + args.test_name
+        try:
+            os.listdir(path)
+            os.chdir(path)
+        except FileNotFoundError:
+            os.mkdir(path)
+            os.chdir(path)
         tester.run_test_from_file(platform.system(), args.device, args.test_name, config, defaults)
+        os.chdir(cwd)
+
 elif args.device and args.test_name:
     tester.run_test_from_file(platform.system(), args.device, args.test_name, defaults, defaults)
 else:
-    print("Hello")
-    print("This is a test")
     print(" Please select a device name using the -d flag and a test name using the -n flag")
 

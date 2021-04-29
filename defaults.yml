@@ -28,6 +28,5 @@ blocksizes:
 runtime: 450
 ioengine: libaio
 size: 50G
-direct: 1
 rw: randrw
 randrepeat: 0

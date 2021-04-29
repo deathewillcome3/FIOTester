@@ -13,3 +13,4 @@ blocksizes:
 runtime: 30
 size: 16
 precondition: False
+ioengine: windowsaio
