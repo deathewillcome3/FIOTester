@@ -1,5 +1,6 @@
 import itertools
 import subprocess
+import processor as p
 from itertools import product
 
 
@@ -25,14 +26,17 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
             arguments[9] += str(coordinate[4])
             arguments[10] += str(coordinate[3])
             arguments[11] += str(coordinate[2])
-            arguments[len(arguments) - 1] += str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) +\
+            f_name = str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) +\
                 "-" + str(coordinate[1]) + ".json"
+            arguments[len(arguments) - 1] += f_name
             arguments[len(arguments) - 2] += str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) +\
                 "-" + str(coordinate[1])
-            print("Running this command" + str(arguments))output
+            print("Running this command" + str(arguments))
             if os == "Windows":
+                f = open("error.txt", "w+")
                 output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json", "--thread"] + arguments,
                                           cstdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                p.parse(f_name)
             else:
                 f = open("error.txt", "w+")
                 output = subprocess.Popen(["fio", "--output-format=json"] + arguments, stdout=subprocess.PIPE,
