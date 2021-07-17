@@ -5,11 +5,11 @@ qdepths:
   - 2
 
 readpcts:
-  - 30
+  - 50
 
 blocksizes:
-  - 16
+  - 8k
 
-runtime: 30
-size: 16
+sruntime: 30
+size: 1G
 precondition: False

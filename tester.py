@@ -34,10 +34,11 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
             print("Running this command" + str(arguments))
             if os == "Windows":
                 f = open("error.txt", "w+")
-                output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json", "--thread"] + arguments,
+                output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json+", "--thread"] + arguments,
                                           cstdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                p.parse(f_name)
+                #p.parse(f_name, name)
             else:
                 f = open("error.txt", "w+")
                 output = subprocess.Popen(["fio", "--output-format=json"] + arguments, stdout=subprocess.PIPE,
                                           stderr=f)
+                #p.parse(f_name, name)
