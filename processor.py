@@ -77,7 +77,7 @@ def parse(json_file, test_name, params):
         metadata["global_options"] = results.get('global options')
         with open(json_file[:-5] + "-metadata.yml", 'w+') as f:
             yaml.dump(metadata, f, allow_unicode=True)
-        connection = create_connection("admin", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+        connection = create_connection("admin", "admin", "", "frizzle.clients.homelab", "5432")
         connection.autocommit = True
         cursor = connection.cursor()
         try:
