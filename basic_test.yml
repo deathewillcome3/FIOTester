@@ -11,5 +11,5 @@ blocksizes:
   - 8k
 
 sruntime: 30
-size: 1G
+size: 5G
 precondition: False

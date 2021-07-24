@@ -2,11 +2,14 @@ import json
 import yaml
 import pprint
 import psycopg2
+import re
 from psycopg2 import OperationalError
 
 
+# Self Explanatory
 def create_connection(db_name, db_user, db_password, db_host, db_port):
     connection = None
+
     try:
         connection = psycopg2.connect(
             database=db_name,
@@ -15,51 +18,85 @@ def create_connection(db_name, db_user, db_password, db_host, db_port):
             host=db_host,
             port=db_port,
         )
-        print("Connection to PostgreSQL DB successful")
+        # print("Connection to PostgreSQL DB successful")
     except OperationalError as e:
         print(f"The error '{e}' occurred")
     return connection
 
-def set_up_tables(connection):
+
+# Recursively weeds out all the items in a dictionary
+def unpack_dict(old_dict, new_dict, dup):
+    if old_dict:
+        new_dict.update({dup + key: value for key, value in old_dict.items() if type(value) != dict
+                         and type(value) != list})
+        temp = (key for key, value in old_dict.items() if type(value) == list or type(value) == dict)
+
+        if temp:
+            for key in temp:
+                unpack_dict(old_dict.get(key), new_dict, dup[:-1] + "_" + key + "_") if dup != "" else \
+                    unpack_dict(old_dict.get(key), new_dict, key + "_")
+    else:
+        pass
+
+
+# Helper Function
+def removekey(d, key):
+    r = dict(d)
+    del r[key]
+    return r
+
+#Formats the data headers in a style that PostgreSQL likes
+def process_headers(args):
+    temp = ""
+    temp_iter = iter(args)
+
+    while True:
+        try:
+            arg = next(temp_iter)
+            if arg.rfind('.') != -1:
+                arg = arg.replace(".", "")
+            if arg.rfind('>=') != -1:
+                arg = arg.replace(">=", "greater_")
+            temp += arg + " decimal, \n "
+        except StopIteration:
+            temp = temp[:-4]
+            break
+
+    return temp
+
+
+# Inits proper database schemas
+def set_up_tables(connection, args, name):
+    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection.autocommit = True
     cursor = connection.cursor()
-    commands = (
-        """
-        CREATE TABLE vendors (
-            vendor_id SERIAL PRIMARY KEY,
-            vendor_name VARCHAR(255) NOT NULL
-        )
-        """,
-        """ CREATE TABLE parts (
-                part_id SERIAL PRIMARY KEY,
-                part_name VARCHAR(255) NOT NULL
-                )
-        """,
-        """
-        CREATE TABLE part_drawings (
-                part_id INTEGER PRIMARY KEY,
-                file_extension VARCHAR(5) NOT NULL,
-                drawing_data BYTEA NOT NULL,
-                FOREIGN KEY (part_id)
-                REFERENCES parts (part_id)
-                ON UPDATE CASCADE ON DELETE CASCADE
-        )
-        """,
-        """
-        CREATE TABLE vendor_parts (
-                vendor_id INTEGER NOT NULL,
-                part_id INTEGER NOT NULL,
-                PRIMARY KEY (vendor_id , part_id),
-                FOREIGN KEY (vendor_id)
-                    REFERENCES vendors (vendor_id)
-                    ON UPDATE CASCADE ON DELETE CASCADE,
-                FOREIGN KEY (part_id)
-                    REFERENCES parts (part_id)
-                    ON UPDATE CASCADE ON DELETE CASCADE
-        )
-        """)
+    temp = "CREATE TABLE " + name + "( \n" + args + ");"
+
+    #DEBUG: Too be removed later
+    # print(temp)
+
     try:
-        for command in commands:
-                cursor.execute(command)
+        cursor.execute(temp)
+        cursor.close()
+        connection.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+
+
+#Does a simple Insert statement to the database
+def insert_data(name, headers, data):
+    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection.autocommit = True
+    headers = "( " + headers.replace("decimal", "") + ")"
+    command = "INSERT INTO %s %s values %s" % (name, headers, data)
+    command += ";"
+    cursor = connection.cursor()
+
+    #DEBUG: Too be removed later
+    # print(command)
+
+    try:
+        cursor.execute(command)
         cursor.close()
         connection.commit()
     except (Exception, psycopg2.DatabaseError) as error:
@@ -68,29 +105,56 @@ def set_up_tables(connection):
         if connection is not None:
             connection.close()
 
+#Main function does all the heavy lifting
 def parse(json_file, test_name, params):
     with open(json_file, 'r') as output:
+        # Opening/loading json file
         results = json.load(output)
         jobs = results.get('jobs')[0]
+        # Metadata: All the stuff that is not directly measured Data: All the results from the test runs
         metadata = {key: value for key, value in results.items() if type(value) != dict and type(value) != list}
         metadata.update({key: value for key, value in jobs.items() if type(value) != dict and type(value) != list})
         metadata["global_options"] = results.get('global options')
-        with open(json_file[:-5] + "-metadata.yml", 'w+') as f:
-            yaml.dump(metadata, f, allow_unicode=True)
+        # Data: All the results from the test runs
+        data = {}
+        unpack_dict(jobs, data, "")
+        data.pop("job options_name")
+        # Removing the Dupes and Processing the Data
+        duplicates = {key: value for key, value in data.items() if (metadata.get(key) is not None)}
+
+        gen = (key for key in data if duplicates.get(key) is not None)
+        for key in gen:
+            data = removekey(data, key)
+        data_headers = []
+        data_content = []
+        for key, value in data.items():
+            data_headers.append(key)
+            data_content.append(value)
+        # PostgresSQL Connection
         connection = create_connection("admin", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
         connection.autocommit = True
         cursor = connection.cursor()
-        try:
-            cursor.execute("CREATE DATABASE benchmarking")
-            print("Query executed successfully")
-            set_up_tables(connection)
-        except OperationalError as e:
-            set_up_tables(connection)
 
-        gen = (key for key, value in jobs.items() if value is dict)
-        pp = pprint.PrettyPrinter(indent=4)
-        for key in gen:
-            print(key)
+        # Debug code will be removed
+        # for key, value in data.items():
+        #     print(str(key) + ":" + str(value))
+
+        # Dumping metadata to seperate output file
+        with open(json_file[:-5] + "-metadata.yml", 'w+') as f:
+            yaml.dump(metadata, f, allow_unicode=True)
+
+        # Executing database insert statement
+        # try:
+        #     # cursor.execute("CREATE DATABASE benchmarking")
+        #     pass
+        # except OperationalError as e:
+        #     pass
+        # finally:
+        #set_up_tables(data_headers, test_name)
+        insert_data(test_name, process_headers(data_headers), tuple(data_content))
+        connection.close()
+
     return 0
 
-parse("2-2-30-8k.json", "asdf", {"test": "asdfasdf"})
+#MORE DEBUG CODE
+# parse("2-2-50-8k.json", "asdf", {"test": "asdfasdf"})
