@@ -45,9 +45,10 @@ def removekey(d, key):
     del r[key]
     return r
 
-#Formats the data headers in a style that PostgreSQL likes
+
+# Formats the data headers in a style that PostgreSQL likes
 def process_headers(args):
-    temp = ""
+    temp = "rw_mix INT, \n threads INT, \n queue_depth INT, \n blocksize VARCHAR, \n "
     temp_iter = iter(args)
 
     while True:
@@ -70,29 +71,50 @@ def set_up_tables(connection, args, name):
     connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
     connection.autocommit = True
     cursor = connection.cursor()
-    temp = "CREATE TABLE " + name + "( \n" + args + ");"
+    temp = "CREATE TABLE " + name + "( \n" + args \
+           + ");"
 
-    #DEBUG: Too be removed later
+    # DEBUG: Too be removed later
     # print(temp)
 
     try:
         cursor.execute(temp)
         cursor.close()
         connection.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+    except psycopg2.errors.DuplicateTable as error:
+        pass
 
 
-#Does a simple Insert statement to the database
+# Does a simple Insert statement to the database
 def insert_data(name, headers, data):
     connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
     connection.autocommit = True
-    headers = "( " + headers.replace("decimal", "") + ")"
-    command = "INSERT INTO %s %s values %s" % (name, headers, data)
-    command += ";"
+    headers = "( \n " + headers.replace("decimal", "").replace("INT", "").replace("VARCHAR", "") + ")"
+    command = "INSERT INTO %s %s values %s ;" % (name, headers, data)
     cursor = connection.cursor()
 
-    #DEBUG: Too be removed later
+    # DEBUG: Too be removed later
+    #print(command)
+
+    try:
+        cursor.execute(command)
+        cursor.close()
+        connection.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print("Error")
+        print(type(error))
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def export_csv(name, dest):
+    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection.autocommit = True
+    command = "COPY %s TO %s DELIMITER ',' CSV HEADER;" % (name, dest)
+    cursor = connection.cursor()
+
+    # DEBUG: Too be removed later
     # print(command)
 
     try:
@@ -100,13 +122,15 @@ def insert_data(name, headers, data):
         cursor.close()
         connection.commit()
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        print(type(error))
     finally:
         if connection is not None:
             connection.close()
 
-#Main function does all the heavy lifting
+
+# Main function does all the heavy lifting
 def parse(json_file, test_name, params):
+    print(params)
     with open(json_file, 'r') as output:
         # Opening/loading json file
         results = json.load(output)
@@ -126,7 +150,8 @@ def parse(json_file, test_name, params):
         for key in gen:
             data = removekey(data, key)
         data_headers = []
-        data_content = []
+        data_content = [params[0], params[1], params[2],
+                        params[3]]
         for key, value in data.items():
             data_headers.append(key)
             data_content.append(value)
@@ -143,18 +168,17 @@ def parse(json_file, test_name, params):
         with open(json_file[:-5] + "-metadata.yml", 'w+') as f:
             yaml.dump(metadata, f, allow_unicode=True)
 
-        # Executing database insert statement
-        # try:
-        #     # cursor.execute("CREATE DATABASE benchmarking")
-        #     pass
-        # except OperationalError as e:
-        #     pass
-        # finally:
-        #set_up_tables(data_headers, test_name)
-        insert_data(test_name, process_headers(data_headers), tuple(data_content))
-        connection.close()
-
+        # Executing database insert statement (Creates Tables if it doesnt exist)
+        try:
+            cursor.execute("CREATE DATABASE benchmarking")
+        except psycopg2.errors.DuplicateDatabase as e:
+            pass
+        finally:
+            print(tuple(data_content))
+            set_up_tables(data_headers, process_headers(data_headers), test_name)
+            insert_data(test_name, process_headers(data_headers), tuple(data_content))
+            connection.close()
     return 0
 
-#MORE DEBUG CODE
-# parse("2-2-50-8k.json", "asdf", {"test": "asdfasdf"})
+# MORE DEBUG CODE
+# parse("16-16-50-512.json", "first_test", {"test": "asdfasdf"})

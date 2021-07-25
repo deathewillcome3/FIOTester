@@ -13,11 +13,7 @@ qdepths:
   - 2
 
 readpcts:
-  - 100
-  - 70
   - 50
-  - 30
-  - 0
 
 blocksizes:
   - 512
@@ -27,7 +23,7 @@ blocksizes:
 
 runtime: 450
 ioengine: libaio
-size: 50G
-direct: 1
+size: 5G
+direct: 0
 rw: randrw
 randrepeat: 0
