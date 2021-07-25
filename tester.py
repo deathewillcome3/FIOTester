@@ -17,6 +17,7 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
                  "--runtime=", "--group_reporting", "--name=", "--output="]
     eqdepths = []
     arguments = [populate_args(arg, params, 2, -1) for arg in arguments]
+
     for eqdepth in product(params.get("qdepths"), params.get("threads")):
         False if eqdepth[0] * eqdepth[1] in eqdepths else eqdepths.append(eqdepth[0] * eqdepth[1])
 
@@ -28,21 +29,20 @@ def run_test_from_file(os, device, name, yaml_conf, defaults):
             tempArr[9] += str(coordinate[4])
             tempArr[10] += str(coordinate[3])
             tempArr[11] += str(coordinate[2])
-            f_name = str(coordinate[4]) + str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + \
-                "-" + str(coordinate[1]) + ".json"
+            f_name = str(coordinate[4]) + "-" + str(coordinate[2]) + "-" + str(coordinate[3]) + "-" \
+                     + str(coordinate[1]) + ".json"
             tempArr[len(arguments) - 1] += f_name
-            tempArr[len(arguments) - 2] += str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) +\
-                "-" + str(coordinate[1])
+            tempArr[len(arguments) - 2] += str(coordinate[2]) + "-" + str(coordinate[3]) + "-" + str(coordinate[4]) + \
+                                           "-" + str(coordinate[1])
             print("Running this command" + str(tempArr))
-            # if os == "Windows":
-            #     f = open("error.txt", "w+")
-            #     output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json+", "--thread"] + tempArr,
-            #                               cstdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # else:
-            #     f = open("error.txt", "w+")
-            #     output = subprocess.Popen(["fio", "--output-format=json"] + tempArr, stdout=subprocess.PIPE,
-            #                               stderr=f)
-            # output.wait()
-            print(f_name, name, params)
+            if os == "Windows":
+                f = open("error.txt", "w+")
+                output = subprocess.Popen(["powershell.exe", "fio", "--output-format=json+", "--thread"] + tempArr,
+                                          cstdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            else:
+                f = open("error.txt", "w+")
+                output = subprocess.Popen(["fio", "--output-format=json"] + tempArr, stdout=subprocess.PIPE,
+                                          stderr=f)
+            output.wait()
             p.parse(f_name, name, [coordinate[4], coordinate[2], coordinate[3], coordinate[1]])
     p.export_csv(name, 'results.csv')

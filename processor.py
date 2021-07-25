@@ -18,9 +18,9 @@ def create_connection(db_name, db_user, db_password, db_host, db_port):
             host=db_host,
             port=db_port,
         )
-        # print("Connection to PostgreSQL DB successful")
     except OperationalError as e:
         print(f"The error '{e}' occurred")
+
     return connection
 
 
@@ -68,7 +68,7 @@ def process_headers(args):
 
 # Inits proper database schemas
 def set_up_tables(connection, args, name):
-    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection = create_connection("benchmarking", "admin", "", "frizzle.clients.homelab", "5432")
     connection.autocommit = True
     cursor = connection.cursor()
     temp = "CREATE TABLE " + name + "( \n" + args \
@@ -87,14 +87,14 @@ def set_up_tables(connection, args, name):
 
 # Does a simple Insert statement to the database
 def insert_data(name, headers, data):
-    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection = create_connection("benchmarking", "admin", "", "frizzle.clients.homelab", "5432")
     connection.autocommit = True
     headers = "( \n " + headers.replace("decimal", "").replace("INT", "").replace("VARCHAR", "") + ")"
     command = "INSERT INTO %s %s values %s ;" % (name, headers, data)
     cursor = connection.cursor()
 
     # DEBUG: Too be removed later
-    #print(command)
+    # print(command)
 
     try:
         cursor.execute(command)
@@ -109,7 +109,7 @@ def insert_data(name, headers, data):
 
 
 def export_csv(name, dest):
-    connection = create_connection("benchmarking", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+    connection = create_connection("benchmarking", "admin", "", "frizzle.clients.homelab", "5432")
     connection.autocommit = True
     command = "COPY %s TO %s DELIMITER ',' CSV HEADER;" % (name, dest)
     cursor = connection.cursor()
@@ -121,7 +121,7 @@ def export_csv(name, dest):
         cursor.execute(command)
         cursor.close()
         connection.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
+    except psycopg2.DatabaseError as error:
         print(type(error))
     finally:
         if connection is not None:
@@ -130,7 +130,6 @@ def export_csv(name, dest):
 
 # Main function does all the heavy lifting
 def parse(json_file, test_name, params):
-    print(params)
     with open(json_file, 'r') as output:
         # Opening/loading json file
         results = json.load(output)
@@ -143,12 +142,12 @@ def parse(json_file, test_name, params):
         data = {}
         unpack_dict(jobs, data, "")
         data.pop("job options_name")
-        # Removing the Dupes and Processing the Data
+        # Removing the Duplicate Objects and Processing the Data
         duplicates = {key: value for key, value in data.items() if (metadata.get(key) is not None)}
-
         gen = (key for key in data if duplicates.get(key) is not None)
         for key in gen:
             data = removekey(data, key)
+        # Breaking up the Dictionary into two arrays containing headers + actual data
         data_headers = []
         data_content = [params[0], params[1], params[2],
                         params[3]]
@@ -156,7 +155,7 @@ def parse(json_file, test_name, params):
             data_headers.append(key)
             data_content.append(value)
         # PostgresSQL Connection
-        connection = create_connection("admin", "admin", "a3b2f5c4", "frizzle.clients.homelab", "5432")
+        connection = create_connection("admin", "admin", "", "frizzle.clients.homelab", "5432")
         connection.autocommit = True
         cursor = connection.cursor()
 
